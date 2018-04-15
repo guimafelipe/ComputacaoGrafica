@@ -23,6 +23,7 @@ Essa é uma solução apenas para jogos 3D e vamos ver abaixo um pouco do códig
 Uma forma de aproximar tonalidades que não estão presentes em uma certa paleta de cores é através da técnica de "dithering", por meio da qual uma difusão de pixels coloridos dentro da paleta produzem a ilusão de estarem representando essas outras cores.
 
 ![Roxo](https://upload.wikimedia.org/wikipedia/commons/6/6d/Dithering_example_red_blue.png)
+Nesta figura, vemos que as cores azul e vermelho podem ser usadas para produzir uma proximidade visual à cor roxa.
 
 Um dos algoritmos usados para produzir efeito é o de Floyd-Steinberg, que atinge o dithering usando a difusão de erros, de forma que o erro de quantização residual de cada pixel é transferido, parcialmente, aos seus pixels vizinhos.
 
