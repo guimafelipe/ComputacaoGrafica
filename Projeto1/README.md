@@ -18,6 +18,93 @@ Uma das soluções artísticas de quantização de cores mais conhecidas na ind�
 
 Essa é uma solução apenas para jogos 3D e vamos ver abaixo um pouco do código de sua implementação.
 
+Fizemos um shader básico e usamos modelos 3D para fazer o teste estético. O código do toon shader é extremamente simples e usa a intensidade da luz para definir a discretização do albedo do personagem.
+
+```glsl
+varying vec3 lightVec;
+
+void fragment() {	
+  vec3 albedoAux;
+  vec2 base_uv = UV;	
+  vec4 albedo_tex = texture(texture_albedo,base_uv);
+  albedoAux = albedo.rgb * albedo_tex.rgb;
+  float intensity;
+  intensity = dot(lightVec, normalize(NORMAL));
+  if (intensity > 0.95)	ALBEDO = albedoAux*1.0;
+  else if (intensity > 0.5) ALBEDO = albedoAux*0.6;
+  else if (intensity > 0.25)  ALBEDO = albedoAux*0.4;
+  else		ALBEDO = albedoAux*0.2;
+}
+
+void light(){	
+  lightVec = LIGHT;
+}
+```
+
+O shader acima foi rodado na game engine Godot em modelos 3D e o resultado é mostrado abaixo:
+
+![Toon Shader](https://i.imgur.com/xu9X1FA.png)
+
+Apenas a uva em destaque tem o toon shader, os outros alimentos tem o shader padrão. Vemos a discretização das cores do albedo da uva na imagem enquanto as outras comidas apresentam um visual mais metálico e brilhante.
+
+Como podemos ver, é uma solução sólida para jogos em 3D e já bem famosa na indústria. Mas adiante testaremos outras soluções e como elas funcionariam se fossem usadas.
+
+### K-Means
+O segundo algoritmo foi simplesmente implementar um shader com o K-means visto em sala de aula. O código do shader é o seguinte:
+
+```glsl
+uniform int PaletteSize;
+uniform float2 RandomPoints[100];
+
+fixed4 frag (v2f i) : SV_Target {
+    fixed4 basecol = tex2D(_MainTex, i.uv);
+    fixed4 finalcol;
+    float mindist = 10000000.0;
+    for(int i = 0; i < PaletteSize; i++) {
+        fixed4 paletteCol = tex2D(_MainTex, RandomPoints[i]);
+        float dist = distance(basecol, paletteCol); 
+        if(dist < mindist) {
+            mindist = dist;
+            finalcol = paletteCol;
+        }
+    }
+    return finalcol;
+}
+```
+
+Porém, esse shader depende de uma geração de paleta de cores externa, que é feito no seguinto código adicionado à textura onde a câmera renderiza a imagem do jogo (código implementado na game engine Unity 3D):
+
+```c#
+public class QuantizeFinalImage : MonoBehaviour {
+  public Material mat;
+  public int PaletteSize;
+  public float PaletteChangeTime;
+
+  void Start() {
+    StartCoroutine(ChangePalette());
+  }
+
+  IEnumerator ChangePalette() {
+    while (true) {
+      var points = new List<Vector4>(PaletteSize);
+      for (int i = 0; i < PaletteSize; i++)  {
+        points.Add(new Vector4(Random.value, Random.value, 0, 0));
+      }
+      mat.SetInt("PaletteSize", PaletteSize);
+      mat.SetVectorArray("RandomPoints", points);
+      yield return new WaitForSeconds(PaletteChangeTime);
+    }
+  }
+
+  void OnRenderImage(RenderTexture src, RenderTexture dst)  {
+    Graphics.Blit(src, dst, mat);
+  }
+}
+```
+O efeito é bem estranho aos olhos, devido à mudança brusca de paleta que ocorre a cada 100ms. Abaixo segue um vídeo mostrando o efeito ocorrido:
+
+https://streamable.com/frhdw
+
 ### Dithering
 
 Uma forma de aproximar tonalidades que não estão presentes em uma certa paleta de cores é através da técnica de "dithering", por meio da qual uma difusão de pixels coloridos dentro da paleta produzem a ilusão de estarem representando essas outras cores.
